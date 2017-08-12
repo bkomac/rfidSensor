@@ -52,7 +52,7 @@ ADC_MODE(ADC_VCC);
 int lightTreshold = 50; // 0 - dark, >100 - light
 
 // APP
-String FIRM_VER = "1.0.0";
+String FIRM_VER = "1.0.1";
 String SENSOR = "RFID,DHT22"; // BMP180, HTU21, DHT11
 
 String app_id = "";
@@ -122,8 +122,8 @@ int BUTTON = 100;
 DHT dht(DHTPIN, DHTTYPE);
 
 // RFID RC552
-#define RST_PIN 12
-#define SS_PIN 14
+#define RST_PIN 5
+#define SS_PIN 4
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 // MDNS
