@@ -52,12 +52,11 @@ ADC_MODE(ADC_VCC);
 int lightTreshold = 50; // 0 - dark, >100 - light
 
 // APP
-String FIRM_VER = "1.0.3";
+String FIRM_VER = "1.0.4";
 String SENSOR = "RFID,DHT22"; // BMP180, HTU21, DHT11
 
 String app_id = "";
 float adc;
-long startTime;
 String espIp;
 String apSsid;
 String apPass;
@@ -100,7 +99,6 @@ char mqttSuscribeTopic[200] = "esp/rfidSensor";
 
 // REST API CONFIG
 char rest_server[40] = "";
-
 boolean rest_ssl = false;
 char rest_path[200] = "";
 int rest_port = 80;
@@ -109,7 +107,10 @@ char api_payload[400] = "";
 
 boolean buttonPressed = false;
 boolean requestSent = false;
-int lastTime = millis();
+long lastTime = millis();
+long apStartTime = 0;
+int apTimeOut = 60000; //1 min
+long startTime;
 
 int BUILTINLED = 2;
 int RELEY = 500;
@@ -163,6 +164,7 @@ void setup() { //------------------------------------------------
 
   // auto connect
   WiFi.setAutoConnect(true);
+  WiFi.setAutoReconnect(true);
 
   // clean FS, for testing
   // SPIFFS.format();
@@ -273,6 +275,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
 // -----------------------------------------------------------------------------
 void loop() {
   delay(10);
+
+if(WiFi.status()!= WL_CONNECTED && apStartTime + apTimeOut < millis()){
+  Serial.print(F("\nRetray to connect to AP... "));
+  testWifi();
+}
+
   rssi = WiFi.RSSI();
 
   server.handleClient();
@@ -1127,10 +1135,16 @@ void mqPublish(String msg) {
 bool testWifi() {
   int c = 0;
   Serial.println("Waiting for Wifi to connect...");
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.begin(essid, epwd);
+  apStartTime = millis();
   while (c < 20) {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.print(F("WiFi connected to "));
       Serial.println(WiFi.SSID());
+      Serial.println(F("IP: "));
+      IPAddress ip = WiFi.localIP();
+      Serial.println(getIP(ip));
 
       blink(2, 30, 1000);
       return true;
@@ -1141,6 +1155,7 @@ bool testWifi() {
     Serial.print(essid);
     Serial.print(F(" status="));
     Serial.println(WiFi.status());
+
     c++;
   }
   Serial.println(F(""));
@@ -1192,7 +1207,7 @@ void setupAP(void) {
   Serial.print(F(", AP IP address: "));
 
   String softAp = getIP(apip);
-
+  apStartTime = millis();
   Serial.println(apip);
   espIp = String(apip);
   blink(5, 100);
